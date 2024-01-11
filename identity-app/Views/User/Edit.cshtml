@@ -5,7 +5,7 @@
 
 <form asp-controller="User" asp-action="Edit" method="post">
 	<div asp-validation-summary="All" class="text-danger"></div>
-	<input type="hidden" asp-for="Id" value=@Model.Id />
+	<input type="hidden" name="Id" value=@Model.Id />
 	<div class="mb-3">
 		<label asp-for="UserName"></label>
 		<input asp-for="UserName" class="form-control" />
@@ -18,13 +18,37 @@
 		<label asp-for="Email"></label>
 		<input asp-for="Email" class="form-control" />
 	</div>
-	<div class="mb-3">
-		<label asp-for="Password"></label>
-		<input asp-for="Password" class="form-control" />
+	<div class="card">
+		<div class="card-header">
+			Parola Güncelle
+		</div>
+		<div class="card-body">
+			<div class="mb-3">
+				<label asp-for="Password"></label>
+				<input asp-for="Password" class="form-control" />
+			</div>
+			<div class="mb-3">
+				<label asp-for="ConfirmPassword"></label>
+				<input asp-for="ConfirmPassword" class="form-control" />
+			</div>
+		</div>
+		
 	</div>
-	<div class="mb-3">
-		<label asp-for="ConfirmPassword"></label>
-		<input asp-for="ConfirmPassword" class="form-control" />
+
+	<div class="card">
+		<div class="card-header">
+			Roller
+		</div>
+		<div class="card-body">
+			@foreach (var role in ViewBag.Roles)
+			{
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" name="" id="@role">
+					<label for="@role" class="form-check-label">@role</label>
+				</div>
+			}
+		</div>
 	</div>
+
 	<button type="submit" class="btn btn-primary">Save</button>
 </form>

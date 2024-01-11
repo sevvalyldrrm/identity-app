@@ -2,16 +2,19 @@
 using identity_app.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace identity_app.Controllers
 {
 	public class UserController : Controller
 	{
 		private UserManager<AppUser> _userManager;
+		private RoleManager<AppRole> _roleManager;
 
-        public UserController(UserManager<AppUser> userManager)
+        public UserController(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager)
         {
             _userManager = userManager;
+			_roleManager = roleManager;
         }
 
         public IActionResult Index()
@@ -78,17 +81,74 @@ namespace identity_app.Controllers
 
 			var user = await _userManager.FindByIdAsync(id);
 
-			if (user == null)
+			if (user != null)
 			{
-				return View(new EditViewModel());
+				ViewBag.Roles = await _roleManager.Roles.Select(i => i.Name).ToListAsync();
+
+				return View(new EditViewModel
+				{
+					Id = user.Id,
+					FullName = user.FullName,
+					UserName= user.UserName,
+					Email = user.Email,
+					SelectedRoles = await _userManager.GetRolesAsync(user)
+				});
 			}
 
-			return View(new EditViewModel
+			return RedirectToAction(nameof(Index));
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> Edit(string id, EditViewModel model)
+		{
+			if (id != model.Id)
 			{
-				Id = user.Id,
-				FullName = user.FullName,
-				Email = user.Email
-			});
+				return RedirectToAction(nameof(Index));
+			}
+
+			if(ModelState.IsValid)
+			{
+				var user = await _userManager.FindByIdAsync(model.Id);
+
+				if(user != null)
+				{
+					user.Email = model.Email;
+					user.FullName = model.FullName;
+					user.UserName = model.UserName;
+				}
+
+				var result = await _userManager.UpdateAsync(user);
+
+
+				if (result.Succeeded && !string.IsNullOrEmpty(model.Password)) {
+					await _userManager.AddPasswordAsync(user, model.Password);
+				}
+
+				if (result.Succeeded)
+				{
+					return RedirectToAction("Index");
+				}
+
+				foreach (IdentityError err in result.Errors)
+				{
+					ModelState.AddModelError("", err.Description);
+				}
+			}
+
+			return View(model);
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> Delete(string id)
+		{
+			var user = await _userManager.FindByIdAsync(id);
+
+			if(user != null)
+			{
+				await _userManager.DeleteAsync(user);	
+			}
+
+			return RedirectToAction(nameof(Index));
 		}
 	}
 }
