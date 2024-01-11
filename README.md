@@ -26,7 +26,7 @@ Başlarken:
 	dotnet run
 
 Kullanım
-Uygulama başladığında tarayıcıda http://localhost:5000 adresine giderek uygulamaya erişebilirsiniz.
+Uygulama başladığında tarayıcıda https://localhost:7061/ adresine giderek uygulamaya erişebilirsiniz.
 
 Başlangıç ​​veritabanıyla gelen örnek kullanıcı bilgileri:
 
