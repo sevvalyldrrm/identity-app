@@ -4,6 +4,6 @@ namespace identity_app.Models
 {
 	public class AppRole: IdentityRole
 	{
-		
+
 	}
 }

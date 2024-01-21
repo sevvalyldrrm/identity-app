@@ -11,13 +11,13 @@ namespace identity_app.Controllers
 		private UserManager<AppUser> _userManager;
 		private RoleManager<AppRole> _roleManager;
 
-        public UserController(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager)
-        {
-            _userManager = userManager;
+		public UserController(UserManager<AppUser> userManager, RoleManager<AppRole> roleManager)
+		{
+			_userManager = userManager;
 			_roleManager = roleManager;
-        }
+		}
 
-        public IActionResult Index()
+		public IActionResult Index()
 		{
 			return View(_userManager.Users);
 		}
@@ -53,7 +53,7 @@ namespace identity_app.Controllers
 				};
 
 
-				
+
 				IdentityResult result = await _userManager.CreateAsync(user, model.Password);
 
 				//kullanıcı basarılı bir sekilde olusturulmus ise yönlendirilecek
@@ -89,7 +89,7 @@ namespace identity_app.Controllers
 				{
 					Id = user.Id,
 					FullName = user.FullName,
-					UserName= user.UserName,
+					UserName = user.UserName,
 					Email = user.Email,
 					SelectedRoles = await _userManager.GetRolesAsync(user)
 				});
@@ -101,41 +101,94 @@ namespace identity_app.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Edit(string id, EditViewModel model)
 		{
+			ViewBag.Roles = await _roleManager.Roles.Select(i => i.Name).ToListAsync();
+
 			if (id != model.Id)
 			{
 				return RedirectToAction(nameof(Index));
 			}
 
-			if(ModelState.IsValid)
+			if (model.Password != null)
 			{
-				var user = await _userManager.FindByIdAsync(model.Id);
 
-				if(user != null)
+				if (ModelState.IsValid)
 				{
-					user.Email = model.Email;
-					user.FullName = model.FullName;
-					user.UserName = model.UserName;
+					var user = await _userManager.FindByIdAsync(model.Id);
+
+					if (user != null)
+					{
+						user.Email = model.Email;
+						user.FullName = model.FullName;
+						user.UserName = model.UserName;
+					}
+
+					var result = await _userManager.UpdateAsync(user);
+
+
+					if (result.Succeeded && !string.IsNullOrEmpty(model.Password))
+					{
+						await _userManager.AddPasswordAsync(user, model.Password);
+					}
+
+					if (result.Succeeded)
+					{
+						await _userManager.RemoveFromRolesAsync(user, await _userManager.GetRolesAsync(user));
+						if (model.SelectedRoles != null)
+						{
+							await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+						}
+						return RedirectToAction("Index");
+					}
+
+					foreach (IdentityError err in result.Errors)
+					{
+						ModelState.AddModelError("", err.Description);
+					}
 				}
-
-				var result = await _userManager.UpdateAsync(user);
-
-
-				if (result.Succeeded && !string.IsNullOrEmpty(model.Password)) {
-					await _userManager.AddPasswordAsync(user, model.Password);
-				}
-
-				if (result.Succeeded)
+				else
 				{
-					return RedirectToAction("Index");
+					ModelState.AddModelError("", "Kullanıcı bulunamadı.");
 				}
 
-				foreach (IdentityError err in result.Errors)
-				{
-					ModelState.AddModelError("", err.Description);
-				}
+				return View(model);
 			}
+			if (model.Password == null)
+			{
+				ModelState.Remove("Password");
+				ModelState.Remove("ConfirmPassword");
 
-			return View(model);
+
+				if (ModelState.IsValid)
+				{
+					var user = await _userManager.FindByIdAsync(model.Id);
+					if (user != null)
+					{
+						user.Email = model.Email;
+						user.FullName = model.FullName;
+						user.UserName = model.UserName;
+
+						var result = await _userManager.UpdateAsync(user);
+						if (result.Succeeded)
+						{
+							await _userManager.RemoveFromRolesAsync(user, await _userManager.GetRolesAsync(user));
+							if (model.SelectedRoles != null)
+							{
+								await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+							}
+
+							return RedirectToAction("Index");
+						}
+						foreach (IdentityError err in result.Errors)
+						{
+							ModelState.AddModelError("", err.Description);
+						}
+					}
+				}
+				return View(model);
+
+			}
+			return RedirectToAction(nameof(Index));
+
 		}
 
 		[HttpPost]
@@ -143,9 +196,9 @@ namespace identity_app.Controllers
 		{
 			var user = await _userManager.FindByIdAsync(id);
 
-			if(user != null)
+			if (user != null)
 			{
-				await _userManager.DeleteAsync(user);	
+				await _userManager.DeleteAsync(user);
 			}
 
 			return RedirectToAction(nameof(Index));
