@@ -81,8 +81,10 @@ namespace identity_app.Controllers
 						ModelState.AddModelError("", err.Description);
 					}
 
-					if(role.Name != null)
+					if (role.Name != null)
+					{
 						ViewBag.Users = await _userManager.GetUsersInRoleAsync(role.Name);
+					}
 				}
 			}
 			return View(model);
