@@ -18,13 +18,26 @@ builder.Services.AddIdentity<AppUser, AppRole>().AddEntityFrameworkStores<Identi
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
-options.Password.RequiredLength = 6;
-options.Password.RequireNonAlphanumeric = false;
-options.Password.RequireLowercase = false;
-options.Password.RequireUppercase = false;
-options.Password.RequireDigit = false;
+	options.Password.RequiredLength = 6;
+	options.Password.RequireNonAlphanumeric = false;
+	options.Password.RequireLowercase = false;
+	options.Password.RequireUppercase = false;
+	options.Password.RequireDigit = false;
 
-options.User.RequireUniqueEmail = true;
+	options.User.RequireUniqueEmail = true;
+
+	options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); //kitlenme süresi
+	options.Lockout.MaxFailedAccessAttempts = 5;  //kullanýcýya verilen giriþ hakký (hesap kitleme)
+
+});
+
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.LoginPath = "/Account/Login";
+	options.AccessDeniedPath = "/Account/AccessDenied"; //yetkisiz yerlere girerken
+	options.SlidingExpiration = true;
+	options.ExpireTimeSpan = TimeSpan.FromDays(30); //uygulamaya giriþ yaptýktan 30 gün sonra cokienin süresi dolar (logout olmadýðý sürece)
 });
 
 var app = builder.Build();
@@ -41,6 +54,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
