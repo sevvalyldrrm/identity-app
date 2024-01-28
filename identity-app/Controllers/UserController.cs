@@ -1,11 +1,13 @@
 ﻿using identity_app.Models;
 using identity_app.ViewModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace identity_app.Controllers
 {
+	[Authorize(Roles = "admin")]
 	public class UserController : Controller
 	{
 		private UserManager<AppUser> _userManager;
@@ -17,59 +19,16 @@ namespace identity_app.Controllers
 			_roleManager = roleManager;
 		}
 
+		//[AllowAnonymous -> bir kimliği olmadan giriş yapabilir. (hepsni kapat(auth) bunu aç demek istedik)
 		public IActionResult Index()
 		{
+			//if (!User.IsInRole("admin"))
+			//{
+			//	return RedirectToAction("Login", "Account");
+			//}
 			return View(_userManager.Users);
 		}
 
-		public IActionResult Create()
-		{
-			return View();
-		}
-
-		[HttpPost]
-		public async Task<IActionResult> Create(CreateViewModel model)
-		{
-			if (ModelState.IsValid)
-			{
-
-				if (await _userManager.FindByEmailAsync(model.Email) != null)
-				{
-					ModelState.AddModelError("", "Bu e-posta adresi zaten kullanımda.");
-					return View(model);
-				}
-
-				if (await _userManager.FindByNameAsync(model.UserName) != null)
-				{
-					ModelState.AddModelError("", "Bu kullanıcı adı zaten kullanımda.");
-					return View(model);
-				}
-
-				var user = new AppUser
-				{
-					UserName = model.UserName,
-					Email = model.Email,
-					FullName = model.FullName,
-				};
-
-
-
-				IdentityResult result = await _userManager.CreateAsync(user, model.Password);
-
-				//kullanıcı basarılı bir sekilde olusturulmus ise yönlendirilecek
-				if (result.Succeeded)
-				{
-					return RedirectToAction("Index");
-				}
-
-				foreach (IdentityError err in result.Errors)
-				{
-					ModelState.AddModelError("", err.Description);
-				}
-
-			}
-			return View(model);
-		}
 
 
 		public async Task<IActionResult> Edit(string id)

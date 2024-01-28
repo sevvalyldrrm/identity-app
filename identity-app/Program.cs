@@ -7,37 +7,46 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddScoped<IEMailSender, SmtpEmailSender>(i => new SmtpEmailSender(
+    builder.Configuration["EmailSender:Host"],
+    builder.Configuration.GetValue<int>("EmailSender:Port"),
+    builder.Configuration.GetValue<bool>("EmailSender:EnableSSL"),
+    builder.Configuration["EmailSender:Username"],
+    builder.Configuration["EmailSender:Password"])
+	);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<IdentityContext>(options =>
 {
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DBConStr"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DBConStr"));
 });
 
-builder.Services.AddIdentity<AppUser, AppRole>().AddEntityFrameworkStores<IdentityContext>();
+builder.Services.AddIdentity<AppUser, AppRole>().AddEntityFrameworkStores<IdentityContext>().AddDefaultTokenProviders(); //parola yenileme-sýfýrlama için gereken token bilgisi
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
-	options.Password.RequiredLength = 6;
-	options.Password.RequireNonAlphanumeric = false;
-	options.Password.RequireLowercase = false;
-	options.Password.RequireUppercase = false;
-	options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireDigit = false;
 
-	options.User.RequireUniqueEmail = true;
+    options.User.RequireUniqueEmail = true;
 
-	options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); //kitlenme süresi
-	options.Lockout.MaxFailedAccessAttempts = 5;  //kullanýcýya verilen giriþ hakký (hesap kitleme)
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5); //kitlenme süresi
+    options.Lockout.MaxFailedAccessAttempts = 5;  //kullanýcýya verilen giriþ hakký (hesap kitleme)
+
+    options.SignIn.RequireConfirmedEmail = true;
 
 });
 
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-	options.LoginPath = "/Account/Login";
-	options.AccessDeniedPath = "/Account/AccessDenied"; //yetkisiz yerlere girerken
-	options.SlidingExpiration = true;
-	options.ExpireTimeSpan = TimeSpan.FromDays(30); //uygulamaya giriþ yaptýktan 30 gün sonra cokienin süresi dolar (logout olmadýðý sürece)
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied"; //yetkisiz yerlere girerken
+    options.SlidingExpiration = true;
+    options.ExpireTimeSpan = TimeSpan.FromDays(30); //uygulamaya giriþ yaptýktan 30 gün sonra cokienin süresi dolar (logout olmadýðý sürece)
 });
 
 var app = builder.Build();
@@ -45,9 +54,9 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-	app.UseExceptionHandler("/Home/Error");
-	// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-	app.UseHsts();
+    app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
@@ -60,8 +69,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
-	name: "default",
-	pattern: "{controller=Home}/{action=Index}/{id?}");
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 IdentitySeedData.IdentityTestUser(app);
 
